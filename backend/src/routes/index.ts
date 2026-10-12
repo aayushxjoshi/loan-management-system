@@ -7,6 +7,10 @@ import { Container } from "../container";
 export function createRouter({ authController: auth, borrowerController: borrower, staffController: staff }: Container) {
   const router = Router();
 
+  router.get("/health", (_req, res) => {
+    res.json({ ok: true });
+  });
+
   router.post("/auth/signup", wrap(auth.signup));
   router.post("/auth/login", wrap(auth.login));
   router.get("/auth/me", authenticate, wrap(auth.me));

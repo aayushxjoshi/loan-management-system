@@ -2,6 +2,7 @@ import { User } from "./models/User";
 import { Loan } from "./models/Loan";
 import { Payment } from "./models/Payment";
 import { BorrowerProfile } from "./models/BorrowerProfile";
+import { SalarySlipFile } from "./models/SalarySlipFile";
 import { AgeRule, EmploymentRule, PanRule, SalaryRule } from "./bre/rules";
 import { EligibilityEngine } from "./bre/eligibilityEngine";
 import { LoanStateMachine } from "./services/loanStateMachine";
@@ -10,6 +11,7 @@ import { ProfileService } from "./services/profileService";
 import { LoanService } from "./services/loanService";
 import { PaymentService } from "./services/paymentService";
 import { LeadService } from "./services/leadService";
+import { SalarySlipService } from "./services/salarySlipService";
 import { AuthController } from "./controllers/authController";
 import { BorrowerController } from "./controllers/borrowerController";
 import { StaffController } from "./controllers/staffController";
@@ -26,7 +28,8 @@ export function buildContainer() {
   const stateMachine = new LoanStateMachine();
 
   const authService = new AuthService(User);
-  const profileService = new ProfileService(BorrowerProfile, eligibilityEngine);
+  const salarySlipService = new SalarySlipService(SalarySlipFile);
+  const profileService = new ProfileService(BorrowerProfile, eligibilityEngine, salarySlipService);
   const loanService = new LoanService(Loan, BorrowerProfile, stateMachine);
   const paymentService = new PaymentService(Loan, Payment, loanService, stateMachine);
   const leadService = new LeadService(User, Loan, BorrowerProfile);
@@ -34,7 +37,7 @@ export function buildContainer() {
   return {
     authController: new AuthController(authService),
     borrowerController: new BorrowerController(profileService, loanService),
-    staffController: new StaffController(loanService, paymentService, leadService),
+    staffController: new StaffController(loanService, paymentService, leadService, salarySlipService),
   };
 }
 

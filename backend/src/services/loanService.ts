@@ -1,11 +1,9 @@
-import path from "path";
 import { Loan } from "../models/Loan";
 import { BorrowerProfile } from "../models/BorrowerProfile";
 import { LoanStatus, OPEN_LOAN_STATUSES } from "../config/constants";
 import { calculateRepayment } from "../utils/loanMath";
 import { AppError } from "../utils/AppError";
 import { LoanStateMachine } from "./loanStateMachine";
-import { UPLOAD_DIR } from "../middleware/upload";
 
 const LOAN_LIST_POPULATE = [
   { path: "borrower", select: "name email" },
@@ -75,11 +73,10 @@ export class LoanService {
     return loan.save();
   }
 
-  async getSalarySlipFile(loanId: string) {
+  async getSalarySlipFileId(loanId: string) {
     const loan = await this.findLoanOrThrow(loanId);
     const profile = await this.profileModel.findById(loan.profile);
-    if (!profile?.salarySlip) throw AppError.notFound("Salary slip not found");
-    const { path: storedName, originalName, mimeType } = profile.salarySlip;
-    return { filePath: path.join(UPLOAD_DIR, path.basename(storedName)), originalName, mimeType };
+    if (!profile?.salarySlip?.fileId) throw AppError.notFound("Salary slip not found");
+    return String(profile.salarySlip.fileId);
   }
 }

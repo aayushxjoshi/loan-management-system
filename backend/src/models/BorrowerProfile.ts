@@ -4,7 +4,7 @@ import { applyJsonTransform } from "../utils/serialize";
 
 const salarySlipSchema = new Schema(
   {
-    path: { type: String, required: true },
+    fileId: { type: Schema.Types.ObjectId, ref: "SalarySlipFile", required: true },
     originalName: { type: String, required: true },
     mimeType: { type: String, required: true },
     size: { type: Number, required: true },

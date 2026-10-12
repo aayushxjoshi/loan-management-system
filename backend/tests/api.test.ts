@@ -7,8 +7,7 @@ import { seedUsers } from "../src/seed";
 import { User } from "../src/models/User";
 import { Payment } from "../src/models/Payment";
 import { Loan } from "../src/models/Loan";
-import { UPLOAD_DIR } from "../src/middleware/upload";
-import fs from "fs";
+import { SalarySlipFile } from "../src/models/SalarySlipFile";
 
 let mongod: MongoMemoryServer;
 
@@ -19,10 +18,6 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  // Remove salary slips written by the tests.
-  fs.readdirSync(UPLOAD_DIR)
-    .filter((name) => name.endsWith(".pdf"))
-    .forEach((name) => fs.unlinkSync(UPLOAD_DIR + "/" + name));
   await mongoose.disconnect();
   await mongod.stop();
 });
@@ -80,6 +75,14 @@ async function disbursedLoan(amount = 50000, tenureDays = 365) {
 
 const pay = (loanId: string, token: string, body: object) =>
   request(app).post(`/api/collection/loans/${loanId}/payments`).set(auth(token)).send(body);
+
+describe("health", () => {
+  it("GET /api/health is public and returns ok", async () => {
+    const res = await request(app).get("/api/health");
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ ok: true });
+  });
+});
 
 describe("auth and RBAC", () => {
   it("signup creates a borrower and rejects duplicate email", async () => {
@@ -154,6 +157,36 @@ describe("borrower journey", () => {
       .set(auth(token))
       .attach("salarySlip", Buffer.from("hi"), { filename: "a.txt", contentType: "text/plain" });
     expect(res.status).toBe(400);
+  });
+
+  it("stores the slip in the database and streams it back to staff", async () => {
+    const token = await readyBorrower();
+    const bytes = Buffer.from("%PDF-1.4 round trip");
+    const upload = await request(app)
+      .post("/api/borrower/profile/salary-slip")
+      .set(auth(token))
+      .attach("salarySlip", bytes, { filename: "march.pdf", contentType: "application/pdf" })
+      .expect(200);
+    expect(upload.body.profile.salarySlip).toMatchObject({ originalName: "march.pdf", mimeType: "application/pdf", size: bytes.length });
+    expect(upload.body.profile.salarySlip.fileId).toBeTruthy();
+    expect(upload.body.profile.salarySlip.path).toBeUndefined();
+    // readyBorrower uploaded one already; the re-upload must have replaced it.
+    expect(await SalarySlipFile.countDocuments()).toBe(1);
+
+    const loan = await request(app).post("/api/borrower/loans").set(auth(token)).send({ amount: 100000, tenureDays: 90 });
+    const slip = await request(app)
+      .get(`/api/sanction/loans/${loan.body.loan.id}/salary-slip`)
+      .set(auth(await staff.sanction()))
+      .buffer(true)
+      .parse((res, cb) => {
+        const chunks: Buffer[] = [];
+        res.on("data", (c: Buffer) => chunks.push(c));
+        res.on("end", () => cb(null, Buffer.concat(chunks)));
+      });
+    expect(slip.status).toBe(200);
+    expect(slip.headers["content-type"]).toContain("application/pdf");
+    expect(slip.headers["content-disposition"]).toContain("march.pdf");
+    expect((slip.body as Buffer).equals(bytes)).toBe(true);
   });
 
   it("creates a loan with computed repayment and blocks a second open loan", async () => {

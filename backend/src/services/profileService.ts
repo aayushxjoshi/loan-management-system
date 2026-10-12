@@ -2,6 +2,7 @@ import { BorrowerProfile } from "../models/BorrowerProfile";
 import { EligibilityEngine } from "../bre/eligibilityEngine";
 import { EmploymentMode } from "../config/constants";
 import { AppError } from "../utils/AppError";
+import { SalarySlipService, UploadedSlip } from "./salarySlipService";
 
 export interface ProfileInput {
   fullName: string;
@@ -14,7 +15,8 @@ export interface ProfileInput {
 export class ProfileService {
   constructor(
     private readonly profileModel: typeof BorrowerProfile,
-    private readonly eligibilityEngine: EligibilityEngine
+    private readonly eligibilityEngine: EligibilityEngine,
+    private readonly salarySlipService: SalarySlipService
   ) {}
 
   getProfile(userId: string) {
@@ -33,23 +35,24 @@ export class ProfileService {
     );
   }
 
-  async attachSalarySlip(
-    userId: string,
-    file: { filename: string; originalname: string; mimetype: string; size: number }
-  ) {
+  async attachSalarySlip(userId: string, file: UploadedSlip) {
+    const hasProfile = await this.profileModel.exists({ user: userId });
+    if (!hasProfile) throw AppError.badRequest("Complete your profile before uploading a salary slip");
+
+    const stored = await this.salarySlipService.save(userId, file);
     const profile = await this.profileModel.findOneAndUpdate(
       { user: userId },
       {
         salarySlip: {
-          path: file.filename,
-          originalName: file.originalname,
-          mimeType: file.mimetype,
-          size: file.size,
+          fileId: stored.id,
+          originalName: stored.originalName,
+          mimeType: stored.mimeType,
+          size: stored.size,
         },
       },
       { returnDocument: "after" }
     );
-    if (!profile) throw AppError.badRequest("Complete your profile before uploading a salary slip");
+    await this.salarySlipService.deleteOthers(userId, stored.id);
     return profile;
   }
 }

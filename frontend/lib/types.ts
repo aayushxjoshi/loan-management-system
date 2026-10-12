@@ -14,7 +14,7 @@ export interface User {
 }
 
 export interface SalarySlip {
-  path: string;
+  fileId: string;
   originalName: string;
   mimeType: string;
   size: number;

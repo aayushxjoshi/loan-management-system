@@ -16,7 +16,7 @@ Monorepo: `backend/` (Express+TS+Mongoose, port 5000), `frontend/` (Next.js App 
 
 ## Collections
 - **User**: name, email (unique), passwordHash, role, createdAt.
-- **BorrowerProfile** (1 per borrower, `user` unique ref): fullName, pan, dateOfBirth, monthlySalary, employmentMode (`SALARIED|SELF_EMPLOYED|UNEMPLOYED`), salarySlip `{ path, originalName, mimeType, size } | null`.
+- **BorrowerProfile** (1 per borrower, `user` unique ref): fullName, pan, dateOfBirth, monthlySalary, employmentMode (`SALARIED|SELF_EMPLOYED|UNEMPLOYED`), salarySlip `{ fileId, originalName, mimeType, size } | null`.
 - **Loan**: borrower (ref User), profile (ref), amount, tenureDays, interestRate(12), interest, totalRepayment, totalPaid(0), status, rejectionReason, sanctionedBy/At, disbursedBy/At, closedAt, timestamps.
 - **Payment**: loan (ref), utr (unique index), amount, paidOn, recordedBy (ref User), timestamps.
 
@@ -43,7 +43,7 @@ Auth (public except /me)
 Borrower (role borrower)
 - `GET /borrower/profile` → `{ profile | null }`
 - `PUT /borrower/profile` {fullName,pan,dateOfBirth(ISO),monthlySalary,employmentMode} → `{ profile }`; BRE fail → 422 `{message:"Not eligible", errors:[...]}` and nothing saved
-- `POST /borrower/profile/salary-slip` multipart field `salarySlip` (pdf/jpg/png ≤5MB; stored in `backend/uploads`, requires profile) → `{ profile }`
+- `POST /borrower/profile/salary-slip` multipart field `salarySlip` (pdf/jpg/png ≤5MB; stored in MongoDB (`SalarySlipFile` collection), requires profile) → `{ profile }`
 - `POST /borrower/loans` {amount(50000–500000), tenureDays(30–365 ints)} requires profile+slip → 201 `{ loan }`
 - `GET /borrower/loans` → `{ loans }` newest first (loan includes payments summary fields above)
 

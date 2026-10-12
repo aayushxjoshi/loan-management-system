@@ -68,7 +68,7 @@ Everything is on `/apply`, a 4-step stepper. A borrower cannot open the dashboar
 ### Step 2: Upload salary slip
 **UI:** File picker. The browser checks type (PDF/JPG/PNG) and size (≤ 5 MB) first.
 **API:** `POST /borrower/profile/salary-slip` (multipart, field `salarySlip`).
-**Server does:** validates type and size again, stores the file in `backend/uploads`, links it to the borrower's profile. Needs a saved profile.
+**Server does:** validates type and size again, stores the file in MongoDB, links it to the borrower's profile. Needs a saved profile.
 
 ### Step 3: Loan configuration
 **UI:** Two sliders: amount 50,000–5,00,000 (step 5,000) and tenure 30–365 days. A live panel shows principal, rate (12% p.a.), interest and total repayment, updating as sliders move.

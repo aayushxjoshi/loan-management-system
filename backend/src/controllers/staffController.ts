@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { LoanService } from "../services/loanService";
 import { PaymentService } from "../services/paymentService";
 import { LeadService } from "../services/leadService";
-import { paymentSchema, rejectSchema, statusQuerySchema } from "./schemas";
+import { SalarySlipService } from "../services/salarySlipService";import { paymentSchema, rejectSchema, statusQuerySchema } from "./schemas";
 import { assertObjectId, parseOrThrow } from "../utils/validate";
 import { LoanStatus } from "../config/constants";
 
@@ -16,7 +16,8 @@ export class StaffController {
   constructor(
     private readonly loanService: LoanService,
     private readonly paymentService: PaymentService,
-    private readonly leadService: LeadService
+    private readonly leadService: LeadService,
+    private readonly salarySlipService: SalarySlipService
   ) {}
 
   // Builds a list handler for a dashboard. The first status is the default.
@@ -56,8 +57,10 @@ export class StaffController {
   };
 
   downloadSalarySlip = async (req: Request, res: Response) => {
-    const { filePath, originalName, mimeType } = await this.loanService.getSalarySlipFile(loanIdParam(req));
-    res.type(mimeType);
-    res.download(filePath, originalName);
+    const fileId = await this.loanService.getSalarySlipFileId(loanIdParam(req));
+    const file = await this.salarySlipService.get(fileId);
+    res.attachment(file.originalName); // sets Content-Disposition (safely encoded)
+    res.setHeader("Content-Type", file.mimeType);
+    res.send(file.data);
   };
 }
