@@ -1,0 +1,70 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design tokens: the only place raw colour values live. Space-separated RGB. */
+:root {
+  --canvas: 11 11 15;
+  --surface: 20 20 27;
+  --surface-raised: 29 29 38;
+  --line: 44 44 56;
+  --fg: 244 244 246;
+  --muted: 161 161 172;
+  --subtle: 113 113 125;
+
+  --accent: 124 84 245;
+  --accent-soft: 176 154 255;
+  --accent-fg: 255 255 255;
+
+  --success: 74 222 128;
+  --warning: 251 191 36;
+  --danger: 248 113 113;
+  --info: 96 165 250;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-canvas font-sans text-fg antialiased;
+  }
+  ::selection {
+    background: rgb(var(--accent) / 0.4);
+  }
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent-soft ring-offset-2 ring-offset-canvas;
+  }
+}
+
+@layer components {
+  /* Hero card: layered surface with a soft accent glow in the corner. */
+  .glow-card {
+    background:
+      radial-gradient(120% 90% at 100% 0%, rgb(var(--accent) / 0.22), transparent 55%),
+      linear-gradient(160deg, rgb(var(--surface-raised)), rgb(var(--surface)));
+  }
+  /* Full-page backdrop for auth screens. */
+  .auth-backdrop {
+    background:
+      radial-gradient(60% 50% at 50% 0%, rgb(var(--accent) / 0.25), transparent 70%),
+      radial-gradient(40% 40% at 90% 100%, rgb(var(--accent) / 0.12), transparent 70%),
+      rgb(var(--canvas));
+  }
+
+  /* Range slider: filled track up to --pct (set inline), round accent thumb. */
+  .range {
+    @apply h-2 w-full cursor-pointer appearance-none rounded-full;
+    background: linear-gradient(
+      to right,
+      rgb(var(--accent)) var(--pct, 0%),
+      rgb(var(--surface-raised)) var(--pct, 0%)
+    );
+  }
+  .range::-webkit-slider-thumb {
+    @apply h-5 w-5 appearance-none rounded-full border-2 border-fg bg-accent shadow-glow;
+  }
+  .range::-moz-range-thumb {
+    @apply h-5 w-5 rounded-full border-2 border-fg bg-accent shadow-glow;
+  }
+}
